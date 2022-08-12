@@ -1,0 +1,18 @@
+machine_data_raw:
+  type: mat
+  filepath: data/raw/MachineData.mat
+
+machine_data_instances:
+  type: pandas.CSVDataSet
+  name_value_range:
+    - 1
+    - 40
+  filepath: data/raw/{}.csv
+  columns:
+    - ch1
+    - ch2
+    - ch3
+
+machine_data_labels:
+  type: pandas.CSVDataSet
+  filepath: data/raw/labels.csv
