@@ -1,0 +1,80 @@
+# Project overview
+project_name: ind-machine-anomaly-detection
+
+# Package config
+package_name: ind_machine_anomaly_detection
+pipeline_name: svc_classification
+pipeline_save_file: svc_classification_pipe
+training_data_file: features_train.csv
+testing_data_file: features_test.csv
+
+# Data catalog
+machine_data_instances_folder: data/raw
+machine_data_instances_filename_range:
+  - 1
+  - 40
+machine_data_file_columns:
+  - ch1
+  - ch2
+  - ch3
+machine_data_instances_number_meas_points: 70000
+machine_data_instances_sampling_frequency: 1
+
+machine_data_labels_file: data/raw/labels.csv
+machine_data_labels_encoding:
+  Before: 1
+  After: 0
+
+# Pipeline config
+## Scaling pipeline (Document about this parameters)
+channels_spectrum_in_frequency_scalers:
+   - ch1
+   - ch2
+   - ch3
+
+channels_and_variables_min_max_scalers:
+  ch1:
+    - skew
+
+  ch2:
+    - ffund
+    - rms
+    - mean
+
+  ch3:
+    - rms
+
+## Features building pipeline
+### Related to spectrum in frequency
+number_max_freq_spectrum: 200
+min_perc_samples_count_peaks_freq_spectrum: 0.50
+number_ordered_peaks_freq_spectrum: 5
+### Related to THD+N estimation
+thdn_beta_filter: 38
+thdn_n_harm: 5
+thdn_wind_func_ratio: 0.1
+thdn_f_max: 250
+
+## Features selection
+features_cols:
+  - ch1_X_91
+  - ch2_X_18
+  - ch2_X_64
+  - ch2_X_91
+  - ch2_X_100
+  - ch2_ffund
+  - ch2_rms_ratio
+  - ch3_X_164
+  - ch1_kurtosis
+  - ch1_skew
+  - ch2_mean
+  - ch2_X_146
+  - ch3_rms_ratio
+  - ch3_X_18
+  - ch3_X_91
+
+# Model configuration (SVC)
+C: 1.0
+kernel: linear
+allowed_kernel_types:
+  - linear
