@@ -9,8 +9,9 @@ from strictyaml import load, YAML
 CONFIG_FOLDER_PATH = Path(__file__).resolve().parent
 CONFIG_FILE_PATH = CONFIG_FOLDER_PATH.joinpath("config.yml")
 PACKAGE_ROOT = CONFIG_FOLDER_PATH.parent
-PROJECT_ROOT = PACKAGE_ROOT.parent.parent
+PROJECT_ROOT = PACKAGE_ROOT.parents[1]
 TRAINED_MODEL_DIR = PROJECT_ROOT.joinpath("models").resolve()
+
 
 class AppConfig(BaseModel):
     """
@@ -24,7 +25,11 @@ class AppConfig(BaseModel):
     training_data_file: str
     testing_data_file: str
 
+
 class MachineDataCatalog(BaseModel):
+    """
+    Catalog of machine sensors data
+    """
 
     machine_data_instances_folder: str
     machine_data_instances_filename_range: t.Sequence[int]
@@ -32,12 +37,20 @@ class MachineDataCatalog(BaseModel):
     machine_data_instances_number_meas_points: int
     machine_data_instances_sampling_frequency: float
 
+
 class LabelDataCatalog(BaseModel):
+    """
+    Catalog of labels data
+    """
 
     machine_data_labels_file: str
     machine_data_labels_encoding: dict
 
+
 class PipelineConfig(BaseModel):
+    """
+    Configuration object of training and prediction pipelines
+    """
 
     # Scalers
     channels_spectrum_in_frequency_scalers: t.Optional[t.Sequence[str]]
@@ -73,14 +86,19 @@ class PipelineConfig(BaseModel):
                 f"the kernel type specified: {value}, "
                 f"is not in the allowed set: {allowed_kernel_types}"
             )
+
         return value
 
-class Config(BaseModel):
 
+class Config(BaseModel):
+    """
+    Master configuration object
+    """
     app_config: AppConfig
     machine_data_catalog: MachineDataCatalog
     labels_data_catalog: LabelDataCatalog
     pipeline_config: PipelineConfig
+
 
 def find_config_file() -> Path:
     """
@@ -101,10 +119,10 @@ def fetch_config_from_yaml(cfg_path: Path = None) -> YAML:
     Parse YAML containing the package configuration.
 
     Args:
-        cfg_path (Path, optional): Path to the configuration YAML to be loaded.
+        cfg_path (Path, optional): Path to the configuration YAML to be loaded
 
     Returns:
-        parsed_config (YAML): Parsed YAML object with configurations parameters.
+        parsed_config (YAML): Parsed YAML object with configurations parameters
     """
 
     if not cfg_path:
@@ -122,10 +140,12 @@ def create_and_validate_config(parsed_config: YAML = None) -> Config:
     Run validation on config values.
 
     Args:
-        parsed_config (YAML): Parsed YAML object which parameters will be unpacked
-                            and loaded as attributes of the 'config' object.
+        parsed_config (YAML): Parsed YAML object which parameters will be
+                            unpacked and loaded as attributes of the 'config'
+                            object.
     Returns:
-        _config (Config): Master configuration object with validated configuration values.
+        _config (Config): Master configuration object with validated
+                        configuration values.
     """
     if parsed_config is None:
         parsed_config = fetch_config_from_yaml()

@@ -1,0 +1,10 @@
+# ML requirements
+joblib
+numpy
+pandas
+scikit-learn
+scipy
+
+# config parsing
+strictyaml
+pydantic

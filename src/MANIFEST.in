@@ -1,0 +1,12 @@
+recursive-include ./ind_machine_anomaly_detection/*
+
+include ind_machine_anomaly_detection/version
+include ind_machine_anomaly_detection/config/config.yml
+include ./requirements.txt
+include ./requirements.ini
+
+exclude *.log
+exclude *.cfg
+
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

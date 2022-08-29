@@ -51,5 +51,8 @@ coverage.xml
 /data/**/**.zip
 /data/**/**.mat
 
+# exclude persisted .pkl files
+*.pkl
+
 # keep empty folders
 !.gitkeep

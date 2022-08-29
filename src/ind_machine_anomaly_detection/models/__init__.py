@@ -1,1 +1,1 @@
-from .svc_model import svc_model
+from .svc_model import svc_model  # noqa : F401

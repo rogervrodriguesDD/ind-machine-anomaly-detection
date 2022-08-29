@@ -1,1 +1,1 @@
-from .split_data import split_data
+from .split_data import split_data  # noqa : F401

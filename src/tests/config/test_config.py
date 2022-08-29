@@ -3,7 +3,10 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from ind_machine_anomaly_detection.config.core import create_and_validate_config, fetch_config_from_yaml
+from ind_machine_anomaly_detection.config.core import (
+    create_and_validate_config,
+    fetch_config_from_yaml
+    )
 
 TEST_CONFIG_TEXT = """
 # Project overview
@@ -98,6 +101,12 @@ features_cols:
   - ch3_X_91
   - ch3_X_77
   - ch3_kurtosis
+
+# Model configuration (SVC)
+C: 1.0
+kernel: linear
+allowed_kernel_types:
+  - linear
 """
 
 INCOMPLETE_CONFIG_TEXT = """
@@ -190,11 +199,18 @@ features_cols:
   - ch3_X_91
   - ch3_X_77
   - ch3_kurtosis
+
+# Model configuration (SVC)
+C: 1.0
+kernel: linear
+allowed_kernel_types:
+  - linear
 """
+
 
 class TestConfiguration(object):
 
-    def test_fetch_config_structure(self,tmpdir):
+    def test_fetch_config_structure(self, tmpdir):
 
         # Writing a tmp file
         configs_dir = Path(tmpdir)
@@ -209,7 +225,7 @@ class TestConfiguration(object):
         assert config.machine_data_catalog
         assert config.labels_data_catalog
 
-    def test_missing_config_field_raises_error(self,tmpdir):
+    def test_missing_config_field_raises_error(self, tmpdir):
 
         # Writing a tmp file
         configs_dir = Path(tmpdir)

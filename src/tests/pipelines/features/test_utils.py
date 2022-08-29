@@ -10,10 +10,6 @@ from ind_machine_anomaly_detection.pipelines.features.utils import (
     get_freq_peaks_positions_values,
 )
 
-from tests.test_fixtures import (
-    test_config,
-    test_machine_data,
-)
 
 def test_calc_fft():
 
@@ -26,11 +22,15 @@ def test_calc_fft():
     t = np.linspace(0, N / fs, N)
     x = A1 * np.sin(2 * np.pi * f1 * t) + A2 * np.sin(2 * np.pi * f2 * t)
 
-    df = pd.DataFrame(np.hstack([t.reshape(-1, 1), x.reshape(-1, 1)]), columns=['time', 'ch1'])
-    df['sample'] = 1
-    df = df.set_index(['sample', 'time'])
+    df = pd.DataFrame(
+        np.hstack([t.reshape(-1, 1), x.reshape(-1, 1)]),
+        columns=["time", "ch1"],
+    )
 
-    f, X = calc_fft(df, col='ch1', samples=[1], N=N, fs=fs)
+    df["sample"] = 1
+    df = df.set_index(["sample", "time"])
+
+    f, X = calc_fft(df, col="ch1", samples=[1], N=N, fs=fs)
 
     # Getting the calculated frequencies
     f1_spectrum = f[np.argmax(X)]
@@ -44,52 +44,85 @@ def test_calc_fft():
     assert f2 == pytest.approx(f2_spectrum, abs=1e-2)
     assert A2 == pytest.approx(f2_amplitude, abs=1e-1)
 
+
 def test_create_df_esp_freq(test_machine_data):
 
     # Setting the necessary parameters
-    idx_instances = test_machine_data.dataframe_instances.index.get_level_values(level=0).unique()
+    idx_instances = (
+        test_machine_data.dataframe_instances.index.get_level_values(
+            level=0
+        ).unique()
+    )
+
+    numb_meas_points = test_machine_data.instances_data_catalog \
+        .machine_data_instances_number_meas_points
+
+    sampling_frequency = test_machine_data.instances_data_catalog \
+        .machine_data_instances_sampling_frequency
+
     samples = np.random.choice(idx_instances, size=5, replace=False)
     N_max = 200
-    cols_list = ['ch1', 'ch2']
+    cols_list = ["ch1", "ch2"]
 
     df_esp_freq = None
     for col in cols_list:
 
         # Calculating the spectrum frequency for a set of samples
-        _, X_mat = calc_fft(df=test_machine_data.dataframe_instances,
-                            col=col,
-                            samples=samples,
-                            N=test_machine_data.instances_data_catalog.machine_data_instances_number_meas_points,
-                            fs=test_machine_data.instances_data_catalog.machine_data_instances_sampling_frequency
-                            )
+        _, X_mat = calc_fft(
+            df=test_machine_data.dataframe_instances,
+            col=col,
+            samples=samples,
+            N=numb_meas_points,
+            fs=sampling_frequency,
+        )
 
         # Testing the `create_df_esp_freq` function
-        df_esp_freq = create_df_esp_freq(X_mat,
-                                        samples=samples,
-                                        N_max=N_max,
-                                        col=col,
-                                        axis_concat=0,
-                                        data_freq=df_esp_freq)
+        df_esp_freq = create_df_esp_freq(
+            X_mat,
+            samples=samples,
+            N_max=N_max,
+            col=col,
+            axis_concat=0,
+            data_freq=df_esp_freq,
+        )
+
+    channels_esp_freq = (
+        df_esp_freq.columns.get_level_values(level=0).unique().tolist()
+    )
 
     assert len(df_esp_freq.columns) == N_max * len(cols_list)
     assert len(set(samples).difference(set(df_esp_freq.index))) == 0
-    assert df_esp_freq.columns.get_level_values(level=0).unique().tolist() == cols_list
+    assert channels_esp_freq == cols_list
+
 
 def test_calculate_spec_frequency_all_instances(test_machine_data):
 
-    idx_instances = test_machine_data.dataframe_instances.index.get_level_values(level=0).unique()
-    N_max = 200
+    idx_instances = (
+        test_machine_data.dataframe_instances.index.get_level_values(
+            level=0
+        ).unique()
+    )
 
-    df_esp_freq = calculate_spec_frequency_all_instances(data=test_machine_data,
-                                                        N_max=N_max)
+    N_max = 200
+    cols_list = ["ch1", "ch2", "ch3"]
+
+    df_esp_freq = calculate_spec_frequency_all_instances(
+        data=test_machine_data, N_max=N_max
+    )
+
+    channels_esp_freq = (
+        df_esp_freq.columns.get_level_values(level=0).unique().tolist()
+    )
 
     assert len(df_esp_freq.columns) == N_max * 3
     assert len(set(idx_instances).difference(set(df_esp_freq.index))) == 0
-    assert df_esp_freq.columns.get_level_values(level=0).unique().tolist() == ['ch1', 'ch2', 'ch3']
+    assert channels_esp_freq == cols_list
+
 
 def test_get_peaks_positions_values():
 
-    # Creating sample signal of a damped system with defined fundamental frequency
+    # Creating sample signal of a damped system with
+    # defined fundamental frequency
     fs = 15000
     N = 70000
     t = np.linspace(0, N / fs, N)
@@ -100,49 +133,66 @@ def test_get_peaks_positions_values():
     x = np.zeros(shape=N)
     list_freq_peaks_signal = []
     for i in range(6):
-        f_ = (10 * i  + 1)* fund_f
+        f_ = (10 * i + 1) * fund_f
         zeta_ = zeta / np.sqrt(2 * i + 1)
         C_ = C * (2 * i + 1)
         V_ = V
 
-        x += C_ * np.exp(-zeta_ * 2 * np.pi * f_ * t) * np.cos(2 * np.pi * f_ * np.sqrt(1 - zeta_**2) * t) + \
-             V_ * np.exp(-zeta_ * 2 * np.pi * f_ * t) * np.sin(2 * np.pi * f_ * np.sqrt(1 - zeta_**2) * t)
+        A = -zeta_ * 2 * np.pi * f_
+        B = 2 * np.pi * f_ * np.sqrt(1 - zeta_ ** 2)
+
+        x += C_ * np.exp(A * t) * np.cos(B * t) + V_ * np.exp(A * t) * np.sin(
+            B * t
+        )
 
         list_freq_peaks_signal.append(f_)
 
     # Creating a DataFrame in the proper format
-    df = pd.DataFrame(np.hstack([t.reshape(-1, 1), x.reshape(-1, 1)]), columns=['time', 'ch1'])
-    df['sample'] = 1
-    df = df.set_index(['sample', 'time'])
+    df = pd.DataFrame(
+        np.hstack([t.reshape(-1, 1), x.reshape(-1, 1)]),
+        columns=["time", "ch1"],
+    )
+
+    df["sample"] = 1
+    df = df.set_index(["sample", "time"])
 
     # Calculating the spectrum in frequency
-    f, X = calc_fft(df, col='ch1', samples=[1], N=N, fs=fs)
-    df_esp_freq = create_df_esp_freq(X, [1], 5000, 'ch1')
+    f, X = calc_fft(df, col="ch1", samples=[1], N=N, fs=fs)
+    df_esp_freq = create_df_esp_freq(X, [1], 5000, "ch1")
 
     # Finding the peaks positions
-    df_peaks = get_freq_peaks_positions_values(df_esp_freq, 'ch1')
-    list_idx_peaks_founded = [int( col.split('_')[-1] ) for col in df_peaks.columns]
+    df_peaks = get_freq_peaks_positions_values(df_esp_freq, "ch1")
 
-    # Getting the frequencies values (round at 0 decimals is needed to get the desired results)
-    list_freq_founded = [np.round(f[idx]) for idx in list_idx_peaks_founded]
+    list_idx_peaks_founded = [
+        int(col.split("_")[-1]) for col in df_peaks.columns
+    ]
 
-    assert len(set(list_freq_peaks_signal).difference(set(list_freq_founded))) == 0
-    assert pytest.approx(df_esp_freq.values.max(), df_peaks.values.max())
+    # Getting the frequencies values
+    # (round at 0 decimals is needed to get the desired results)
+    list_freq_founded = set(
+        [np.round(f[idx]) for idx in list_idx_peaks_founded]
+    )
 
-def test_get_freq_peaks_positions_values_with_multiple_channels(test_machine_data):
+    assert len(set(list_freq_peaks_signal).difference(list_freq_founded)) == 0
+    assert pytest.approx(df_esp_freq.values.max()) == df_peaks.values.max()
 
-    idx_instances = test_machine_data.dataframe_instances.index.get_level_values(level=0).unique()
+
+def test_get_freq_peaks_positions_values_with_multiple_channels(
+    test_machine_data,
+):
+
     N_max = 200
 
-    df_esp_freq = calculate_spec_frequency_all_instances(data=test_machine_data,
-                                                        N_max=N_max)
+    df_esp_freq = calculate_spec_frequency_all_instances(
+        data=test_machine_data, N_max=N_max
+    )
 
-    df_peaks_ch1 = get_freq_peaks_positions_values(df_esp_freq, channel='ch1')
-    df_peaks_ch2 = get_freq_peaks_positions_values(df_esp_freq, channel='ch2')
-    df_peaks_ch3 = get_freq_peaks_positions_values(df_esp_freq, channel='ch3')
+    df_peaks_ch1 = get_freq_peaks_positions_values(df_esp_freq, channel="ch1")
+    df_peaks_ch2 = get_freq_peaks_positions_values(df_esp_freq, channel="ch2")
+    df_peaks_ch3 = get_freq_peaks_positions_values(df_esp_freq, channel="ch3")
 
     # Renaming original df columns
-    df_esp_freq.columns = df_esp_freq.columns.map('_'.join)
+    df_esp_freq.columns = df_esp_freq.columns.map("_".join)
 
     assert np.allclose(df_peaks_ch1, df_esp_freq[df_peaks_ch1.columns])
     assert np.allclose(df_peaks_ch2, df_esp_freq[df_peaks_ch2.columns])

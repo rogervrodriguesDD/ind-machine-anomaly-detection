@@ -1,4 +1,8 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
+
+from ind_machine_anomaly_detection.config.core import PipelineConfig
+from ind_machine_anomaly_detection.data.machine_data import MachineSensorDataCSV  # noqa
 
 from ind_machine_anomaly_detection.pipelines.features.utils import (
     calculate_spec_frequency_all_instances,
@@ -9,68 +13,90 @@ from ind_machine_anomaly_detection.pipelines.features.utils import (
 )
 
 
-def build_features_candidates(data, pipeline_config, training=True):
+def build_features_candidates(
+        *,
+        data: MachineSensorDataCSV,
+        pipeline_config: PipelineConfig,
+        training: bool = True) -> pd.DataFrame:
     """
     Build all potential features candidates on the machine data sensors
     in time domain.
 
     The following preprocessing steps are used to build the features:
     1. Calculate the spectrum in frequency of the sensors data (all channels);
-    2. Get the peaks positions of the spectrum in frequency obtained by the previous step;
+    2. Get the peaks positions of the spectrum in frequency obtained by the
+        previous step;
     3. Get the ordered values of the peaks, given their amplitude;
     4. Estimate the TDH+N of the sensors data (all channels);
-    5. Calculate the statistical summary table (mean, median, std, skewness, kurtosis)
-        of the sensors data in time domain.
+    5. Calculate the statistical summary table (mean, median, std, skewness,
+        kurtosis) of the sensors data in time domain.
 
-    Since those steps have deterministic behavior, and there is no need to save metadata,
-    it was decided not to wrap this function into a sklearn Pipeline component.
+    Since those steps have deterministic behavior, and there is no need to
+    save metadata, it was decided not to wrap this function into a sklearn
+    Pipeline component.
     ...
 
     Args:
-        data (MachineSensorDataCSV): Object with all data instances and information
-        pipeline_config (PipelineConfig): Configuration object with all needed parameters
-                                        to build the features
+        data (MachineSensorDataCSV): Object with all data instances and
+                                     information
+        pipeline_config (PipelineConfig): Configuration object with all needed
+                                     parameters to build the features
 
     Returns:
-        data_feat_candidates (pd.DataFrame): DataFrame with all features candidates and the labels
+        data_feat_candidates (pd.DataFrame): DataFrame with all features
+                                     candidates and the labels
     """
 
     data_freq = calculate_spec_frequency_all_instances(
-                    data,
+                    data=data,
                     N_max=pipeline_config.number_max_freq_spectrum
                 )
 
-    # The function `get_freq_peaks_positions_values_all_channels` must be used ONLY during training
-    #   During prediction, those values are selected on the features filtering step
+    # The function `get_freq_peaks_positions_values_all_channels` must be used
+    # ONLY during training
+    # During prediction, those values are selected on the features
+    # filtering step
+
+    min_perc_samples_count = \
+        pipeline_config.min_perc_samples_count_peaks_freq_spectrum
+
     if training:
         data_peaks_pos_values = get_freq_peaks_positions_values_all_channels(
-                                    data_freq,
-                                    min_perc_samples_count=pipeline_config.min_perc_samples_count_peaks_freq_spectrum,
-                                )
+            data_freq=data_freq,
+            min_perc_samples_count=min_perc_samples_count
+            )
     else:
         data_peaks_pos_values = data_freq.copy()
-        data_peaks_pos_values.columns = data_peaks_pos_values.columns.map('_'.join)
+
+        data_peaks_pos_values.columns = data_peaks_pos_values.columns \
+            .map('_'.join)
 
     data_ord_peaks_pos = get_ordered_peaks_positions_all_channels(
-                            data_peaks_pos_values,
-                            n_max_positions=pipeline_config.number_ordered_peaks_freq_spectrum,
-                            n_freq_points=pipeline_config.number_max_freq_spectrum
-                        )
+        data_freq_peaks=data_peaks_pos_values,
+        n_max_positions=pipeline_config.number_ordered_peaks_freq_spectrum,
+        n_freq_points=pipeline_config.number_max_freq_spectrum
+    )
 
-    data_thdn = calculate_thdn_all_channels(data, pipeline_config)
+    data_thdn = calculate_thdn_all_channels(
+        data=data,
+        pipeline_config=pipeline_config
+        )
 
     data_stats_summ = calculating_stats_summary_all_instances(data)
 
-    data_feat_candidates = pd.concat(
-        [
+    list_df_features = [
             data_peaks_pos_values,
             data_ord_peaks_pos,
             data_thdn,
             data_stats_summ,
-            data.get_labels()
-        ],
-        axis=1,
-        ignore_index=False
+        ]
+    if training:
+        list_df_features.append(data.get_labels(encoded=False))
+
+    data_feat_candidates = pd.concat(
+                list_df_features,
+                axis=1,
+                ignore_index=False
         )
 
     return data_feat_candidates
