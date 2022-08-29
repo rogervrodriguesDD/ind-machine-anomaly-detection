@@ -6,9 +6,12 @@ Industrial Machine Anomaly Detection
 This is an example project of a ML model for anomaly detection of an industrial machine based on sensors data.
 Its purpose is for practicing the development of a ML project applying some best practices of development, including for example structured template, and unit testing. For that reason, the intention is to begin with the deployment of the simplest model, and update it when other models are proved to have better performance.
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a></small></p>
+To reproduce the results of this project, see the [initial steps](docs/initial_steps.md)
 
-**Project phase:** Development of the production version
+<p><small>Project originally based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a></small></p>
+
+**Project phase:** 1st production version / 2nd phase of research
+
 
 # About the project
 ---
@@ -72,7 +75,7 @@ Using techniques of signal processing:
 - [Total Harmonic Distortion.](https://en.wikipedia.org/wiki/Total_harmonic_distortion)
 
 Given that the intention of this project is to be a case-study, I restricted the Preprocessing step to just those features listed.
-The total of features created by the preprocessing pipeline can achieve the number of 500, from which only 12 will be
+The total of features created by the preprocessing pipeline can achieve the number of 500, from which only 15 will be
 selected using a feature selection method. In the future, I intend to expand the possibilities, creating more features
 using automatic generators, such as [tsfresh](https://tsfresh.readthedocs.io/en/latest/).
 
@@ -89,7 +92,8 @@ Three reasons for this choice: first, to have a performance reference when train
 models; Second, a simple model maintains the explainability, which is very important for models applied to engineering;
 Third, simple models usually perform better on datasets with few samples, when compared to the more sophisticated models.
 
-To compare the results between the models, two performance indicators are considered: the score using Nested-Cross Validation, and the confusion matrix of the testing dataset. Details on this matter can be found in the notebook [02_Model_Selection](notebooks/02_Model_Selection.ipynb).
+To compare the results between the models, two performance indicators are considered: the score using Nested-Cross Validation, and the confusion matrix of the testing dataset. Details on this matter can be found in the notebook [02_Model_Selection_Using_Dev_pkg](notebooks/02_Model_Selection_Using_Dev_Pkg.ipynb) (a version of the notebook that
+try to replicate the results of the original model selection notebook).
 
 Below, a chart comparing the mean scores (F-beta) for the three models.
 
@@ -99,7 +103,7 @@ Below, the confusion matrix based on the predictions of the testing dataset (10 
 
 ![Comparison of confusion matrices for the three models](./docs/figures/comparison_confusion_matrices.png)
 
-Comparing the graphs above, one may notice that the three models had similar performance on the testing dataset (KNN was sligthly better). In any case, the most important aspect of any model for this application, which is to correctly classify all the machines with risk to failure, is presented.
+Comparing the graphs above, one may notice that the Logistic Regression and SVM models had the same performance on the testing dataset. In that case, for the referred models, the most important aspect, which is to correctly classify all the machines with risk to failure, is presented.
 
 However, the thing here is, that an attention to the low number of samples using as testing sample can be misleading. For that reason, we consider the distribution of the mean F-Beta score, which shows clearly that SVM had a superior performance.
 
@@ -117,10 +121,9 @@ The graph shows how is possible to separate the major of the two classes samples
 
 - A set of features calculated on the signal in both time and frequency domain were of high importance to the performance of the models tested;
 
-- Until the moment, the model with better performance is a Support Vector Machine, which input were 12 of the calculated features;
+- Until the moment, the model with better performance is a Support Vector Machine, which input were 15 of the calculated features;
 
 - In a real-life project, an observation about the low number of samples would be made, with the suggestion to collect more data.
-
 
 
 
@@ -129,8 +132,6 @@ Project Organization
 
 The following template is used as reference in the development of this project.
 
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
     ├── README.md          <- The top-level README for developers using this project.
     ├── data
     │   ├── external       <- Data from third party sources.
@@ -138,41 +139,43 @@ The following template is used as reference in the development of this project.
     │   ├── processed      <- The final, canonical data sets for modeling.
     │   └── raw            <- The original, immutable data dump.
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
+    ├── docs               <- Files related to documentation
     ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
+    ├── notebooks          <- Jupyter notebooks.
     ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    |
+    ├── run_app.py         <- Script to run train / predict pipeline
+    |
+    ├── requirements.txt   <- The requirements file for run the production version package
     │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
+    ├── dev_requirements.ini   <- The requirements file for reproducing the analysis environment
+    |                             (including the notebooks)
+    |
+    ├── dev_requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+    │                             generated with `pip-compile dev_requirements.ini`
     │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
-
+    ├── src                   <- Source code for use in this project.
+    |   |
+    │   ├── ind_machine_anomaly_detection    <- Project's package folder
+    |   |   |
+    |   │   ├── config        <- Scripts with parameters needed to run the training pipeline
+    |   │   ├── data          <- Scripts with functions and classes related to files reading or writing
+    |   │   ├── pipelines     <- Scripts to create training and predicting pipelines
+    |   │   ├── models        <- Scripts with models definitions
+    |   │   └── VERSION       <- Package's version
+    |   |
+    |   ├── tests    <- Unit tests
+    |   │
+    |   ├── requirements.ini   <- Original requirements file for run the production version package
+    |   ├── requirements.txt   <- Compiled requirements file for run the production version package (pip-compile)
+    |   ├── test_requirements.ini   <- Original requirements file for run the unit tests on the package
+    |   ├── test_requirements.txt   <- Compiled requirements file for run the production version package (pip-compile)
+    |   │
+    |   ├── setup.py           <- makes project pip installable
+    |   |
+    |   └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    |
+    └── .gitignore              <- List of files to be ignored in versioning control
 
 --------
